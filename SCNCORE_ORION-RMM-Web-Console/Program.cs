@@ -50,7 +50,7 @@ var knownProxies = builder.Configuration.GetSection("Kestrel:KnownProxies").Get<
 Web_Console.loggingEnabled = loggingEnabled;
 
 // Add Remote_Server to the services
-var remoteServerConfig = builder.Configuration.GetSection("SCNCOREORION_Remote_Server").Get<SCNCORE_ORION_Web_Console.Classes.Remote_Server.Config>();
+var remoteServerConfig = builder.Configuration.GetSection("Scncoreorion_Remote_Server").Get<SCNCORE_ORION_Web_Console.Classes.Remote_Server.Config>();
 Remote_Server.Hostname = remoteServerConfig.Server;
 
 if (remoteServerConfig.UseSSL)
@@ -63,7 +63,7 @@ else
 }
 
 // Add File Server to the services
-var fileServerConfig = builder.Configuration.GetSection("SCNCOREORION_File_Server").Get<SCNCORE_ORION_Web_Console.Classes.File_Server.Config>();
+var fileServerConfig = builder.Configuration.GetSection("Scncoreorion_File_Server").Get<SCNCORE_ORION_Web_Console.Classes.File_Server.Config>();
 File_Server.Hostname = fileServerConfig.Server;
 
 if (fileServerConfig.UseSSL)
