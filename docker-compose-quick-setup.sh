@@ -256,8 +256,8 @@ if [[ -z "$le_domain" ]]; then
 fi
 
 # Generate web console and server domains
-web_console_domain="nl-webconsole.$le_domain"
-server_domain="nl-server.$le_domain"
+web_console_domain="scnorion-webconsole.$le_domain"
+server_domain="scnorion-server.$le_domain"
 
 echo ""
 
