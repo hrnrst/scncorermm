@@ -2,6 +2,8 @@
 @using System.Data.Common;
 @using System.Text.Json;
 @using System.Security.Claims
+@using System.IO.Compression;
+@using System.Text
 
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService localStorage
@@ -728,4 +730,544 @@
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    private bool creating_installer = false;
+    private string installer_url = "";
+
+    private async Task Download_Installer()
+    {
+        creating_installer = true;
+        loading_overlay = true;
+        StateHasChanged();
+
+        try
+        {
+            await Get_Guids();
+
+            // Server config JSON'unu oluştur
+            var jsonObject = new
+            {
+                ssl = ssl,
+                package_guid = package_guid,
+                communication_servers = communication_servers,
+                remote_servers = remote_servers,
+                update_servers = update_servers,
+                trust_servers = trust_servers,
+                file_servers = file_servers,
+                tenant_guid = tenant_guid,
+                location_guid = location_guid,
+                language = language,
+                access_key = String.Empty,
+                authorized = false,
+            };
+
+            string json = JsonSerializer.Serialize(jsonObject, new JsonSerializerOptions { WriteIndented = true });
+            
+            // Base installer path'i oluştur
+            string baseInstallerPath = FindInstallerFile(architecture);
+            
+            if (baseInstallerPath == null)
+            {
+                Snackbar.Add($"Installer for {architecture} not found", Severity.Error);
+                return;
+            }
+            
+            // Dinamik installer oluştur
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string dynamicInstallerName = $"SCNCORE_Installer_{architecture}_{timestamp}.zip";
+            string dynamicInstallerPath = $"wwwroot/temp/{dynamicInstallerName}";
+            
+            // Temp klasörünü oluştur
+            Directory.CreateDirectory("wwwroot/temp");
+            
+            // Config ile installer oluştur
+            await CreatePackageWithConfig(baseInstallerPath, json, dynamicInstallerPath);
+            
+            // Download URL'ini oluştur
+            string baseUrl = ssl ? "https://" : "http://";
+            string serverHost = update_servers.Split(':')[0];
+            string port = ssl ? ":443" : ":80";
+            
+            installer_url = $"{baseUrl}{serverHost}{port}/temp/{dynamicInstallerName}";
+            
+            // Dosyayı indir
+            await JSRuntime.InvokeVoidAsync("window.open", installer_url, "_blank");
+            
+            Snackbar.Add("Installer package downloaded. Extract and run install.bat", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Download error: {ex.Message}", Severity.Error);
+            Logging.Handler.Error("/Agent_Download -> Download_Installer", "Error", ex.ToString());
+        }
+        finally
+        {
+            creating_installer = false;
+            loading_overlay = false;
+            StateHasChanged();
+        }
+    }
+    private async Task CreatePackageWithConfig(string baseInstallerPath, string config, string outputPath)
+    {
+        using (var archive = ZipFile.Open(baseInstallerPath, ZipArchiveMode.Read))
+        using (var newArchive = ZipFile.Open(outputPath, ZipArchiveMode.Create))
+        {
+            // Mevcut dosyaları kopyala
+            foreach (var entry in archive.Entries)
+            {
+                var newEntry = newArchive.CreateEntry(entry.FullName);
+                using (var originalStream = entry.Open())
+                using (var newStream = newEntry.Open())
+                {
+                    await originalStream.CopyToAsync(newStream);
+                }
+            }
+            
+            // Config dosyasını ekle
+            var configEntry = newArchive.CreateEntry("server_config.json");
+            using (var stream = configEntry.Open())
+            using (var writer = new StreamWriter(stream))
+            {
+                await writer.WriteAsync(config);
+            }
+            
+            // Platform'a göre script dosyaları oluştur
+            if (architecture.StartsWith("win"))
+            {
+                await CreateWindowsScripts(newArchive);
+            }
+            else if (architecture.StartsWith("linux"))
+            {
+                await CreateLinuxScripts(newArchive);
+            }
+            else if (architecture.StartsWith("osx"))
+            {
+                await CreateMacOSScripts(newArchive);
+            }
+            
+            // README dosyası (platform-specific)
+            await CreateReadmeFile(newArchive, architecture);
+        }
+    }
+
+    private async Task CreateWindowsScripts(ZipArchive archive)
+    {
+        // Windows install.bat
+        var installEntry = archive.CreateEntry("install.bat");
+        using (var stream = installEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"@echo off
+    setlocal enabledelayedexpansion
+
+    echo SCNCORE ORION RMM Agent Installer
+    echo ===================================
+
+    net session >nul 2>&1
+    if %errorLevel% == 0 (
+        echo Running as Administrator - OK
+    ) else (
+        echo ERROR: This installer must be run as Administrator
+        echo Right-click on install.bat and select 'Run as administrator'
+        pause
+        exit /b 1
+    )
+
+    cd /d ""%~dp0""
+    echo Working directory: %CD%
+
+    if not exist ""SCNCORE_ORION_RMM_Agent_Installer.exe"" (
+        echo ERROR: SCNCORE_ORION_RMM_Agent_Installer.exe not found
+        pause
+        exit /b 1
+    )
+
+    if not exist ""server_config.json"" (
+        echo ERROR: server_config.json not found
+        pause
+        exit /b 1
+    )
+
+    echo.
+    echo Starting installation...
+    ""%CD%\SCNCORE_ORION_RMM_Agent_Installer.exe"" clean ""%CD%\server_config.json""
+
+    if %errorlevel% == 0 (
+        echo Installation completed successfully!
+    ) else (
+        echo Installation failed!
+    )
+    pause
+    ");
+        }
+
+        // Windows fix.bat
+        var fixEntry = archive.CreateEntry("fix.bat");
+        using (var stream = fixEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"@echo off
+    cd /d ""%~dp0""
+    echo Repairing SCNCORE ORION RMM Agent...
+    ""%CD%\SCNCORE_ORION_RMM_Agent_Installer.exe"" fix ""%CD%\server_config.json""
+    pause
+    ");
+        }
+
+        // Windows uninstall.bat
+        var uninstallEntry = archive.CreateEntry("uninstall.bat");
+        using (var stream = uninstallEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"@echo off
+    cd /d ""%~dp0""
+    echo Uninstalling SCNCORE ORION RMM Agent...
+    ""%CD%\SCNCORE_ORION_RMM_Agent_Installer.exe"" uninstall
+    pause
+    ");
+        }
+    }
+
+    private async Task CreateLinuxScripts(ZipArchive archive)
+    {
+        // Linux install.sh
+        var installEntry = archive.CreateEntry("install.sh");
+        using (var stream = installEntry.Open())
+        using (var writer = new StreamWriter(stream, new UTF8Encoding(false))) // BOM olmadan UTF-8
+        {
+            await writer.WriteAsync("#!/bin/bash\n\n" +
+                "echo \"SCNCORE ORION RMM Agent Installer\"\n" +
+                "echo \"=====================================\"\n\n" +
+                "# Root kontrolü\n" +
+                "if [ \"$EUID\" -ne 0 ]; then\n" +
+                "    echo \"ERROR: This installer must be run as root\"\n" +
+                "    echo \"Please run: sudo ./install.sh\"\n" +
+                "    exit 1\n" +
+                "fi\n\n" +
+                "# Çalışma dizinini ayarla\n" +
+                "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\n" +
+                "cd \"$SCRIPT_DIR\"\n" +
+                "echo \"Working directory: $(pwd)\"\n\n" +
+                "# Dosya kontrolü\n" +
+                "if [ ! -f \"SCNCORE_ORION_RMM_Agent_Installer\" ]; then\n" +
+                "    echo \"ERROR: SCNCORE_ORION_RMM_Agent_Installer not found\"\n" +
+                "    exit 1\n" +
+                "fi\n\n" +
+                "if [ ! -f \"server_config.json\" ]; then\n" +
+                "    echo \"ERROR: server_config.json not found\"\n" +
+                "    exit 1\n" +
+                "fi\n\n" +
+                "# Execute permission ver\n" +
+                "chmod +x \"SCNCORE_ORION_RMM_Agent_Installer\"\n\n" +
+                "echo\n" +
+                "echo \"Starting installation...\"\n" +
+                "./SCNCORE_ORION_RMM_Agent_Installer clean \"$SCRIPT_DIR/server_config.json\"\n\n" +
+                "if [ $? -eq 0 ]; then\n" +
+                "    echo \"Installation completed successfully!\"\n" +
+                "else\n" +
+                "    echo \"Installation failed!\"\n" +
+                "fi\n\n" +
+                "echo \"Press Enter to continue...\"\n" +
+                "read\n");
+        }
+
+        // Linux fix.sh
+        var fixEntry = archive.CreateEntry("fix.sh");
+        using (var stream = fixEntry.Open())
+        using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+        {
+            await writer.WriteAsync("#!/bin/bash\n\n" +
+                "echo \"SCNCORE ORION RMM Agent Repair\"\n" +
+                "echo \"==============================\"\n\n" +
+                "if [ \"$EUID\" -ne 0 ]; then\n" +
+                "    echo \"ERROR: This script must be run as root\"\n" +
+                "    echo \"Please run: sudo ./fix.sh\"\n" +
+                "    exit 1\n" +
+                "fi\n\n" +
+                "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\n" +
+                "cd \"$SCRIPT_DIR\"\n\n" +
+                "chmod +x \"SCNCORE_ORION_RMM_Agent_Installer\"\n\n" +
+                "echo \"Repairing agent...\"\n" +
+                "./SCNCORE_ORION_RMM_Agent_Installer fix \"$SCRIPT_DIR/server_config.json\"\n\n" +
+                "echo \"Press Enter to continue...\"\n" +
+                "read\n");
+        }
+
+        // Linux uninstall.sh
+        var uninstallEntry = archive.CreateEntry("uninstall.sh");
+        using (var stream = uninstallEntry.Open())
+        using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+        {
+            await writer.WriteAsync("#!/bin/bash\n\n" +
+                "echo \"SCNCORE ORION RMM Agent Uninstaller\"\n" +
+                "echo \"=====================================\"\n\n" +
+                "echo \"WARNING: This will completely remove the SCNCORE ORION RMM Agent\"\n" +
+                "read -p \"Are you sure you want to uninstall? (y/N): \" confirm\n\n" +
+                "if [[ ! $confirm =~ ^[Yy]$ ]]; then\n" +
+                "    echo \"Uninstallation cancelled.\"\n" +
+                "    exit 0\n" +
+                "fi\n\n" +
+                "if [ \"$EUID\" -ne 0 ]; then\n" +
+                "    echo \"ERROR: This script must be run as root\"\n" +
+                "    echo \"Please run: sudo ./uninstall.sh\"\n" +
+                "    exit 1\n" +
+                "fi\n\n" +
+                "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\n" +
+                "cd \"$SCRIPT_DIR\"\n\n" +
+                "chmod +x \"SCNCORE_ORION_RMM_Agent_Installer\"\n\n" +
+                "echo \"Uninstalling agent...\"\n" +
+                "./SCNCORE_ORION_RMM_Agent_Installer uninstall\n\n" +
+                "echo \"Press Enter to continue...\"\n" +
+                "read\n");
+        }
+    }
+
+    private async Task CreateMacOSScripts(ZipArchive archive)
+    {
+        // macOS install.sh
+        var installEntry = archive.CreateEntry("install.sh");
+        using (var stream = installEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"#!/bin/bash
+
+    echo ""SCNCORE ORION RMM Agent Installer for macOS""
+    echo ""===========================================""
+
+    # Root kontrolü
+    if [ ""$EUID"" -ne 0 ]; then
+        echo ""ERROR: This installer must be run with sudo""
+        echo ""Please run: sudo ./install.sh""
+        exit 1
+    fi
+
+    # Çalışma dizinini ayarla
+    SCRIPT_DIR=""$(cd ""$(dirname ""${BASH_SOURCE[0]}"")""  && pwd)""
+    cd ""$SCRIPT_DIR""
+    echo ""Working directory: $(pwd)""
+
+    # Dosya kontrolü
+    if [ ! -f ""SCNCORE_ORION_RMM_Agent_Installer"" ]; then
+        echo ""ERROR: SCNCORE_ORION_RMM_Agent_Installer not found""
+        exit 1
+    fi
+
+    if [ ! -f ""server_config.json"" ]; then
+        echo ""ERROR: server_config.json not found""
+        exit 1
+    fi
+
+    # Execute permission ver
+    chmod +x ""SCNCORE_ORION_RMM_Agent_Installer""
+
+    # Gatekeeper bypass (unsigned executable için)
+    echo ""Bypassing Gatekeeper for installation...""
+    xattr -d com.apple.quarantine ""SCNCORE_ORION_RMM_Agent_Installer"" 2>/dev/null || true
+
+    echo
+    echo ""Starting installation...""
+    ./SCNCORE_ORION_RMM_Agent_Installer clean ""$SCRIPT_DIR/server_config.json""
+
+    if [ $? -eq 0 ]; then
+        echo ""Installation completed successfully!""
+    else
+        echo ""Installation failed!""
+    fi
+
+    echo ""Press Enter to continue...""
+    read
+    ");
+        }
+
+        // macOS fix.sh
+        var fixEntry = archive.CreateEntry("fix.sh");
+        using (var stream = fixEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"#!/bin/bash
+
+    echo ""SCNCORE ORION RMM Agent Repair for macOS""
+    echo ""=======================================""
+
+    if [ ""$EUID"" -ne 0 ]; then
+        echo ""ERROR: This script must be run with sudo""
+        echo ""Please run: sudo ./fix.sh""
+        exit 1
+    fi
+
+    SCRIPT_DIR=""$(cd ""$(dirname ""${BASH_SOURCE[0]}"")""  && pwd)""
+    cd ""$SCRIPT_DIR""
+
+    chmod +x ""SCNCORE_ORION_RMM_Agent_Installer""
+    xattr -d com.apple.quarantine ""SCNCORE_ORION_RMM_Agent_Installer"" 2>/dev/null || true
+
+    echo ""Repairing agent...""
+    ./SCNCORE_ORION_RMM_Agent_Installer fix ""$SCRIPT_DIR/server_config.json""
+
+    echo ""Press Enter to continue...""
+    read
+    ");
+        }
+
+        // macOS uninstall.sh
+        var uninstallEntry = archive.CreateEntry("uninstall.sh");
+        using (var stream = uninstallEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            await writer.WriteAsync(@"#!/bin/bash
+
+    echo ""SCNCORE ORION RMM Agent Uninstaller for macOS""
+    echo ""=============================================""
+
+    echo ""WARNING: This will completely remove the SCNCORE ORION RMM Agent""
+    read -p ""Are you sure you want to uninstall? (y/N): "" confirm
+
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+        echo ""Uninstallation cancelled.""
+        exit 0
+    fi
+
+    if [ ""$EUID"" -ne 0 ]; then
+        echo ""ERROR: This script must be run with sudo""
+        echo ""Please run: sudo ./uninstall.sh""
+        exit 1
+    fi
+
+    SCRIPT_DIR=""$(cd ""$(dirname ""${BASH_SOURCE[0]}"")""  && pwd)""
+    cd ""$SCRIPT_DIR""
+
+    chmod +x ""SCNCORE_ORION_RMM_Agent_Installer""
+    xattr -d com.apple.quarantine ""SCNCORE_ORION_RMM_Agent_Installer"" 2>/dev/null || true
+
+    echo ""Uninstalling agent...""
+    ./SCNCORE_ORION_RMM_Agent_Installer uninstall
+
+    echo ""Press Enter to continue...""
+    read
+    ");
+        }
+    }
+
+    private async Task CreateReadmeFile(ZipArchive archive, string architecture)
+    {
+        var readmeEntry = archive.CreateEntry("README.txt");
+        using (var stream = readmeEntry.Open())
+        using (var writer = new StreamWriter(stream))
+        {
+            string platformInstructions = "";
+            
+            if (architecture.StartsWith("win"))
+            {
+                platformInstructions = @"WINDOWS INSTALLATION:
+    ====================
+    1. Extract all files to a folder
+    2. Right-click 'install.bat' and select 'Run as administrator'
+    3. Follow the instructions
+
+    Available files:
+    - install.bat   (Fresh installation)
+    - fix.bat       (Repair installation)
+    - uninstall.bat (Remove agent)";
+            }
+            else if (architecture.StartsWith("linux"))
+            {
+                platformInstructions = @"LINUX INSTALLATION:
+    ==================
+    1. Extract all files to a folder
+    2. Open terminal in the folder
+    3. Run: sudo chmod +x *.sh
+    4. Run: sudo ./install.sh
+
+    Available files:
+    - install.sh   (Fresh installation)
+    - fix.sh       (Repair installation)
+    - uninstall.sh (Remove agent)";
+            }
+            else if (architecture.StartsWith("osx"))
+            {
+                platformInstructions = @"macOS INSTALLATION:
+    ==================
+    1. Extract all files to a folder
+    2. Open Terminal in the folder
+    3. Run: sudo chmod +x *.sh
+    4. Run: sudo ./install.sh
+
+    Available files:
+    - install.sh   (Fresh installation)
+    - fix.sh       (Repair installation)
+    - uninstall.sh (Remove agent)
+
+    Note: You may need to allow the executable in 
+    System Preferences > Security & Privacy";
+            }
+
+            await writer.WriteAsync($@"SCNCORE ORION RMM Agent Installer Package
+    ==========================================
+
+    Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} UTC
+    Architecture: {architecture}
+    SSL Enabled: {ssl}
+
+    {platformInstructions}
+
+    MANUAL INSTALLATION:
+    ===================
+    If scripts don't work, run manually:
+
+    Fresh install:
+    ./SCNCORE_ORION_RMM_Agent_Installer clean server_config.json
+
+    Repair install:
+    ./SCNCORE_ORION_RMM_Agent_Installer fix server_config.json
+
+    Uninstall:
+    ./SCNCORE_ORION_RMM_Agent_Installer uninstall
+
+    SUPPORT:
+    ========
+    Contact technical support if you encounter issues.
+    ");
+        }
+    }
+
+    private string FindInstallerFile(string architecture)
+    {
+        string fileName = $"installer.package.{architecture}.zip";
+        
+        string[] searchPaths = {
+            $"wwwroot/private/downloads/SCNCORE_ORION/{fileName}",
+            $"/app/wwwroot/private/downloads/SCNCORE_ORION/{fileName}",
+            $"private/downloads/SCNCORE_ORION/{fileName}",
+            $"downloads/SCNCORE_ORION/{fileName}"
+        };
+        
+        foreach (string path in searchPaths)
+        {
+            if (File.Exists(path))
+            {
+                return path;
+            }
+        }
+        
+        // Klasörlerde arama yap
+        string[] searchDirs = {
+            "wwwroot/private/downloads/SCNCORE_ORION/",
+            "/app/wwwroot/private/downloads/SCNCORE_ORION/",
+            "private/downloads/SCNCORE_ORION/"
+        };
+        
+        foreach (string dir in searchDirs)
+        {
+            if (Directory.Exists(dir))
+            {
+                var foundFiles = Directory.GetFiles(dir, fileName, SearchOption.AllDirectories);
+                if (foundFiles.Length > 0)
+                {
+                    return foundFiles[0];
+                }
+            }
+        }
+        
+        return null;
+    }
 }

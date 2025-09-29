@@ -9,5 +9,11 @@ namespace SCNCORE_ORION_RMM_Web_Console
         //OSSCH_START 441a5dd1-e7fe-4327-b89b-ee571a0c7acc //OSSCH_END
 
         public static string onlyPro = "This feature is exclusive to Pro & Cloud users. Please ensure you have an active paid membership, or your changes will not take effect.";
+        public static bool IsLiveEnvironment { get; set; } = false;
+        public static string Members_Portal_Api_Url_Live { get; set; } = "https://api.scncore.com";
+        public static string Members_Portal_Api_Url_Test { get; set; } = "https://test-api.scncore.com";
+        public static string Obfuscation_Encryption_Password { get; set; } = "default_password";
+
+
     }
 }

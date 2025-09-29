@@ -193,7 +193,7 @@
     <value>Name</value>
   </data>
   <data name="note" xml:space="preserve">
-    <value>Note: The e-mails are sent later by the NetLock RMM server and not web console. Please note this in your firewall configuration.</value>
+    <value>Note: The e-mails are sent later by the SCNCORE_ORION server and not web console. Please note this in your firewall configuration.</value>
   </data>
   <data name="password" xml:space="preserve">
     <value>Password</value>

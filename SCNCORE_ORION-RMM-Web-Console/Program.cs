@@ -1,28 +1,28 @@
 using MudBlazor.Services;
-using SCNCORE_ORION_Web_Console.Components;
-using SCNCORE_ORION_Web_Console;
+using SCNCORE_ORION_RMM_Web_Console.Components;
+using SCNCORE_ORION_RMM_Web_Console;
 using System.Net;
-using SCNCORE_ORION_Web_Console.Classes.MySQL;
+using SCNCORE_ORION_RMM_Web_Console.Classes.MySQL;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using SCNCORE_ORION_Web_Console.Classes.Authentication;
+using SCNCORE_ORION_RMM_Web_Console.Classes.Authentication;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using SCNCORE_ORION_Web_Console.Configuration;
+using SCNCORE_ORION_RMM_Web_Console.Configuration;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http.Features;
-using SCNCORE_ORION_Web_Console.Components.Pages.Devices;
+using SCNCORE_ORION_RMM_Web_Console.Components.Pages.Devices;
 using LettuceEncrypt;
 using LettuceEncrypt.Acme;
 using MudBlazor;
 using Microsoft.AspNetCore.HttpOverrides;
 using static MudBlazor.Defaults;
-using SCNCORE_ORION_Web_Console.Classes.Helper;
+using SCNCORE_ORION_RMM_Web_Console.Classes.Helper;
 using Org.BouncyCastle.Asn1.X509.Qualified;
 
-SCNCORE_ORION_Web_Console.Classes.Setup.Directories.Check_Directories(); // Check if directories exist and create them if not
+SCNCORE_ORION_RMM_Web_Console.Classes.Setup.Directories.Check_Directories(); // Check if directories exist and create them if not
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,7 +50,7 @@ var knownProxies = builder.Configuration.GetSection("Kestrel:KnownProxies").Get<
 Web_Console.loggingEnabled = loggingEnabled;
 
 // Add Remote_Server to the services
-var remoteServerConfig = builder.Configuration.GetSection("Scncoreorion_Remote_Server").Get<SCNCORE_ORION_Web_Console.Classes.Remote_Server.Config>();
+var remoteServerConfig = builder.Configuration.GetSection("Scncoreorion_Remote_Server").Get<SCNCORE_ORION_RMM_Web_Console.Classes.Remote_Server.Config>();
 Remote_Server.Hostname = remoteServerConfig.Server;
 
 if (remoteServerConfig.UseSSL)
@@ -63,7 +63,7 @@ else
 }
 
 // Add File Server to the services
-var fileServerConfig = builder.Configuration.GetSection("Scncoreorion_File_Server").Get<SCNCORE_ORION_Web_Console.Classes.File_Server.Config>();
+var fileServerConfig = builder.Configuration.GetSection("Scncoreorion_File_Server").Get<SCNCORE_ORION_RMM_Web_Console.Classes.File_Server.Config>();
 File_Server.Hostname = fileServerConfig.Server;
 
 if (fileServerConfig.UseSSL)
@@ -178,7 +178,7 @@ Console.WriteLine("[Members Portal]");
 Console.WriteLine($"Api Enabled: {Members_Portal.api_enabled}");
 
 if (!String.IsNullOrEmpty(Members_Portal.api_key))
-    Console.WriteLine($"Api Key Override: {membersPortal.ApiKeyOverride}");
+    Console.WriteLine($"Api Key Override: {Members_Portal.api_key}");
 
 Console.WriteLine(Environment.NewLine);
 
@@ -329,18 +329,18 @@ else
             // Get api key
             if (String.IsNullOrEmpty(Members_Portal.api_key))
             {
-                Members_Portal.api_key = await SCNCORE_ORION_Web_Console.Classes.MySQL.Handler.Get_Api_Key();
+                Members_Portal.api_key = await SCNCORE_ORION_RMM_Web_Console.Classes.MySQL.Handler.Get_Api_Key();
 
                 Console.WriteLine("Members Portal API key loaded from database: " + Members_Portal.api_key);
             }
             else
-                await SCNCORE_ORION_Web_Console.Classes.Members_Portal.Handler.Set_Api_Key(Members_Portal.api_key);
+                await SCNCORE_ORION_RMM_Web_Console.Classes.Members_Portal.Handler.Set_Api_Key(Members_Portal.api_key);
 
             // Do cloud stuff
             if (Members_Portal.cloud_enabled)
             {
                 Console.WriteLine("Cloud enabled. Checking cloud connection...");
-                if (await SCNCORE_ORION_Web_Console.Classes.Members_Portal.Handler.Check_Connection())
+                if (await SCNCORE_ORION_RMM_Web_Console.Classes.Members_Portal.Handler.Check_Connection())
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("Cloud connection successful.");
@@ -358,7 +358,7 @@ else
             }
 
             // Update license info
-            await SCNCORE_ORION_Web_Console.Classes.Members_Portal.Handler.Request_License_Info_Json(Members_Portal.api_key);
+            await SCNCORE_ORION_RMM_Web_Console.Classes.Members_Portal.Handler.Request_License_Info_Json(Members_Portal.api_key);
         }
     }
 }
@@ -404,8 +404,8 @@ catch (Exception ex)
 builder.Services.AddServerSideBlazor().AddHubOptions(x => x.MaximumReceiveMessageSize = 102400000);
 
 // Add background services
-builder.Services.AddHostedService<SCNCORE_ORION_Web_Console.Classes.MySQL.AutoCleanupService>();
-builder.Services.AddHostedService<SCNCORE_ORION_Web_Console.Classes.ScreenRecorder.AutoCleanupService>(); //disabled until remote screen control release
+builder.Services.AddHostedService<SCNCORE_ORION_RMM_Web_Console.Classes.MySQL.AutoCleanupService>();
+builder.Services.AddHostedService<SCNCORE_ORION_RMM_Web_Console.Classes.ScreenRecorder.AutoCleanupService>(); //disabled until remote screen control release
 
 // Generate tokenservice secretkey
 Web_Console.token_service_secret_key = Randomizer.Handler.Token(true, 32);

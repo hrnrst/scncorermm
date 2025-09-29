@@ -1476,4 +1476,19 @@ OPTIMIZE TABLE tenants;";
             await conn.CloseAsync();
         }
     }
+
+    private void Save_Api_Key()
+    {
+        // API key kaydetme logic
+    }
+
+    private void Update_Members_Portal_License_Information()
+    {
+        // License bilgi güncelleme logic
+    }
+
+    private async Task<Task> Get_Members_Portal_License_Status()
+    {
+        return await Task.FromResult(Task.CompletedTask);
+    }
 }

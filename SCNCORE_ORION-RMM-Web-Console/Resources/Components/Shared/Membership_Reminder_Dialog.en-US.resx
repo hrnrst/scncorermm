@@ -117,8 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Discover more about our NetLock RMM Cloud version!" xml:space="preserve">
-    <value>Discover more about our NetLock RMM Cloud version!</value>
+  <data name="Discover more about our SCNCORE_ORION RMM Cloud version!" xml:space="preserve">
+    <value>Discover more about our SCNCORE_ORION RMM Cloud version!</value>
   </data>
   <data name="dismiss" xml:space="preserve">
     <value>Do not show again, but I have read and understood the message.</value>
@@ -127,32 +127,32 @@
     <value>Explore our Membership options!</value>
   </data>
   <data name="greetings" xml:space="preserve">
-    <value>Thank you for your understanding and now have fun using NetLock RMM. :)</value>
+    <value>Thank you for your understanding and now have fun using SCNCORE_ORION RMM. :)</value>
   </data>
   <data name="membership_info_text" xml:space="preserve">
-    <value>Our memberships are designed to be affordable, starting at just €25 per month, while our cloud-hosted NetLock RMM instances are available for €30 per month.</value>
+    <value>Our memberships are designed to be affordable, starting at just €25 per month, while our cloud-hosted SCNCORE_ORION RMM instances are available for €30 per month.</value>
   </data>
   <data name="open_source_text" xml:space="preserve">
-    <value>Access the fully open-source agents of NetLock RMM with no feature limitations—completely free!</value>
+    <value>Access the fully open-source agents of SCNCORE_ORION RMM with no feature limitations—completely free!</value>
   </data>
   <data name="or text" xml:space="preserve">
-    <value>Or, please consider supporting us to help NetLock RMM grow!</value>
+    <value>Or, please consider supporting us to help SCNCORE_ORION RMM grow!</value>
   </data>
   <data name="subtitle" xml:space="preserve">
     <value>Please take a moment to read this. Your understanding is essential to keep the project alive and thriving.</value>
   </data>
   <data name="text" xml:space="preserve">
-    <value>NetLock RMM is an open-source RMM solution that I, Nico, have been developing full-time as a solo developer. My vision is to create a robust, state-of-the-art RMM that meets the needs of both enterprises and small businesses, with transparency and independence at its core.
+    <value>SCNCORE_ORION RMM is an open-source RMM solution that I, Nico, have been developing full-time as a solo developer. My vision is to create a robust, state-of-the-art RMM that meets the needs of both enterprises and small businesses, with transparency and independence at its core.
 
-Since late 2023, I’ve dedicated myself to building the entire foundation of NetLock RMM, but, as of now (October 25, 2024). Although I explored funding options, I chose not to involve investors to keep the project as independent as possible.
+Since late 2023, I’ve dedicated myself to building the entire foundation of SCNCORE_ORION RMM, but, as of now (October 25, 2024). Although I explored funding options, I chose not to involve investors to keep the project as independent as possible.
 
-NetLock RMM is more than just a project—it's my full-time job and my passion. Hosting and offering you that service costs money and a lot of time. 
+SCNCORE_ORION RMM is more than just a project—it's my full-time job and my passion. Hosting and offering you that service costs money and a lot of time. 
 
-I hope that companies using NetLock RMM will support the project through memberships or cloud instances. I believe that, with your support, we can build a competitive, open-source RMM capable of standing alongside the larger closed-source solutions.
+I hope that companies using SCNCORE_ORION RMM will support the project through memberships or cloud instances. I believe that, with your support, we can build a competitive, open-source RMM capable of standing alongside the larger closed-source solutions.
 
 Thank you for joining this journey.</value>
   </data>
   <data name="title" xml:space="preserve">
-    <value>Welcome to NetLock RMM!</value>
+    <value>Welcome to SCNCORE_ORION RMM!</value>
   </data>
 </root>

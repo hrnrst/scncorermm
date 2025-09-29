@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SCNCORE_ORION_RMM_Web_Console
+namespace SCNCORE_ORION_RMM_Agent_Comm
 {
     public class Microsoft_Defender_Firewall
     {

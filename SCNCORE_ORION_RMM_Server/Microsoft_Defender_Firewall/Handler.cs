@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SCNCORE_ORION_RMM_Web_Console
+namespace SCNCORE_ORION_RMM_Server.Microsoft_Defender_Firewall
 {
-    public class Microsoft_Defender_Firewall
+    public class Handler
     {
         public static bool Status()
         {

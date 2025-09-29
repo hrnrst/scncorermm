@@ -41,11 +41,8 @@
                 <div class="d-none d-md-flex">
                     <MudIconButton Icon="@Icons.Material.Filled.InstallDesktop" Color="Color.Inherit" Title="Agent Download" OnClick="Agent_Download_Dialog" />
                     <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
-                    <MudIconButton Href="https://github.com/ahmetkarakayaoffical/scncorermm/issues" Target="_blank" Icon="@Icons.Material.Filled.BugReport" Color="Color.Inherit" Title="@Localizer["report_a_bug"]" />
-                    <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/ahmetkarakayaoffical/scncorermm" Title="GitHub" Target="_blank" />
                     <MudIconButton Icon="@Icons.Material.Filled.MenuBook" Color="Color.Inherit" Href="https://docs.scncore.com" Title="@Localizer["documentation"]" Target="_blank" />
                     <MudIconButton Icon="@Icons.Material.Filled.Support" Color="Color.Inherit" Href="https://members.scncore.com" Title="Support" Target="_blank" />
-                    <MudIconButton Icon="@Icons.Custom.Brands.Discord" Color="Color.Inherit" Href="https://scncore.com" Title="SCNCORE" Target="_blank" />
                     <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Title="@Localizer["logout"]" Href="/logout" Class="d-none d-md-flex" />
                 </div>
 
@@ -53,11 +50,8 @@
                 <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Class="d-md-none">
                     <MudMenuItem OnClick="Agent_Download_Dialog">@Localizer["agent_download"]</MudMenuItem>
                     <MudMenuItem OnClick="@DarkModeToggle">Dark mode</MudMenuItem>
-                    <MudMenuItem Href="https://github.com/ahmetkarakayaoffical/scncorermm/issues" Target="_blank">@Localizer["report_a_bug"]</MudMenuItem>
-                    <MudMenuItem Href="https://github.com/ahmetkarakayaoffical/scncorermm" Target="_blank">GitHub</MudMenuItem>
                     <MudMenuItem Href="https://docs.scncore.com" Target="_blank">@Localizer["documentation"]</MudMenuItem>
                     <MudMenuItem Href="https://members.scncore.com" Target="_blank">@Localizer["support"]</MudMenuItem>
-                    <MudMenuItem Href="https://scncore.com" Target="_blank">SCNCORE</MudMenuItem>
                     <MudMenuItem Href="/logout">@Localizer["logout"]</MudMenuItem>
                     <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"  Class="d-none d-md-flex" />
                 </MudMenu>

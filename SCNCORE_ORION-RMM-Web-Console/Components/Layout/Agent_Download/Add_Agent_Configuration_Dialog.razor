@@ -104,4 +104,14 @@
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    private bool creating_installer = false;
+    private string installer_url = "";
+
+    private void Download_Installer()
+    {
+        creating_installer = true;
+        // Installer logic burada olacak
+        creating_installer = false;
+    }
 }

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace SCNCORE_ORION_RMM_Web_Console.Classes.Members_Portal
+namespace SCNCORE_ORION_RMM_Server.Members_Portal
 {
     public static class Handler
     {

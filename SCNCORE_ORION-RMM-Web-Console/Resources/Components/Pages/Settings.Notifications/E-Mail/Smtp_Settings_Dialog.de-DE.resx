@@ -193,7 +193,7 @@
     <value>Name</value>
   </data>
   <data name="note" xml:space="preserve">
-    <value>Hinweis: Die E-Mails werden später vom NetLock RMM Server versendet und nicht von der Webconsole. Beachten Sie dies in Ihrer Firewall Konfiguration.</value>
+    <value>Hinweis: Die E-Mails werden später vom SCNCORE_ORION Server versendet und nicht von der Webconsole. Beachten Sie dies in Ihrer Firewall Konfiguration.</value>
   </data>
   <data name="no_tenants_selected" xml:space="preserve">
     <value>Es wurden keine Mandanten ausgewählt.</value>

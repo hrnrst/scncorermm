@@ -1,4 +1,4 @@
-﻿namespace NetLock_RMM_Web_Console
+﻿namespace SCNCORE_ORION_RMM_Web_Console
 {
     public class Changelogs
     {

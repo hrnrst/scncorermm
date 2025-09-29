@@ -1,4 +1,10 @@
 namespace SCNCORE_ORION_RMM_Web_Console.Configuration
 {
-    //OSSCH_START 882203ab-9732-45c5-a81c-d7402f3a0109 //OSSCH_END
+    public static class Members_Portal
+    {
+        public static bool cloud_enabled { get; set; } = false;
+        public static bool api_enabled { get; set; } = false;
+        public static string api_key { get; set; } = string.Empty;
+        public static bool isCodeSigned { get; set; } = false; 
+    }
 }
